@@ -1,7 +1,8 @@
 import type { MetaFunction, LoaderFunctionArgs } from "@vercel/remix";
-import { Link, useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { json } from "@vercel/remix";
 import { prisma } from "~/prisma.server";
+import { Pagination } from "@nextui-org/react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -10,20 +11,33 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+const PAGE_SIZE = 1;
 export const loader = async (args: LoaderFunctionArgs) => {
-  const posts = await prisma.posts.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const search = new URL(args.request.url).searchParams;
+  const page = Number(search.get("page") || 1);
+
+  const [posts, total] = await prisma.$transaction([
+    prisma.posts.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      // 分页查询
+      take: PAGE_SIZE,
+      skip: (page - 1) * PAGE_SIZE,
+    }),
+    prisma.posts.count(),
+  ]);
 
   return json({
     posts,
+    pageCount: Math.ceil(total / PAGE_SIZE),
   });
 };
 
 const Page = () => {
   const loadedData = useLoaderData<typeof loader>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get("page") || 1);
 
   return (
     <div>
@@ -36,6 +50,16 @@ const Page = () => {
             <div className="text-sm text-gray-400">{post.createdAt}</div>
           </div>
         ))}
+        <Pagination
+          total={loadedData.pageCount}
+          page={page}
+          onChange={async (page) => {
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.set("page", String(page));
+            setSearchParams(newSearchParams);
+          }}
+          
+        />
       </div>
     </div>
   );
