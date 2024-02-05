@@ -2,7 +2,13 @@ import type { MetaFunction, LoaderFunctionArgs } from "@vercel/remix";
 import { Link, useLoaderData, useSearchParams } from "@remix-run/react";
 import { json } from "@vercel/remix";
 import { prisma } from "~/prisma.server";
-import { Pagination } from "@nextui-org/react";
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  Pagination,
+} from "@nextui-org/react";
 
 export const meta: MetaFunction = () => {
   return [
@@ -43,12 +49,17 @@ const Page = () => {
     <div>
       <div className="p-12 flex flex-col gap-4">
         {loadedData.posts.map((post: any) => (
-          <div key={post.id}>
-            <Link to={`/posts/${post.id}`} className="text-xl">
-              {post.title}
-            </Link>
-            <div className="text-sm text-gray-400">{post.createdAt}</div>
-          </div>
+          <Card key={post.id} className="">
+            <CardHeader>
+              <Link to={`/posts/${post.id}`} className="text-xl">
+                {post.title}
+              </Link>
+            </CardHeader>
+            <CardBody>{post.content}</CardBody>
+            <CardFooter>
+              <div className="text-sm text-gray-400">{post.createdAt}</div>
+            </CardFooter>
+          </Card>
         ))}
         <Pagination
           total={loadedData.pageCount}
@@ -58,7 +69,6 @@ const Page = () => {
             newSearchParams.set("page", String(page));
             setSearchParams(newSearchParams);
           }}
-          
         />
       </div>
     </div>
