@@ -1,41 +1,43 @@
-import type { MetaFunction } from "@vercel/remix";
+import type { MetaFunction, LoaderFunctionArgs } from "@vercel/remix";
+import { Link, useLoaderData } from "@remix-run/react";
+import { json } from "@vercel/remix";
+import { prisma } from "~/prisma.server";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "Time Tracking App" },
+    { name: "description", content: "时间追踪器; time tacking" },
   ];
 };
 
-export default function Index() {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const posts = await prisma.posts.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return json({
+    posts,
+  });
+};
+
+const Page = () => {
+  const loadedData = useLoaderData<typeof loader>();
+
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Welcome to Remix</h1>
-      <ul>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/blog"
-            rel="noreferrer"
-          >
-            15m Quickstart Blog Tutorial
-          </a>
-        </li>
-        <li>
-          <a
-            target="_blank"
-            href="https://remix.run/tutorials/jokes"
-            rel="noreferrer"
-          >
-            Deep Dive Jokes App Tutorial
-          </a>
-        </li>
-        <li>
-          <a target="_blank" href="https://remix.run/docs" rel="noreferrer">
-            Remix Docs
-          </a>
-        </li>
-      </ul>
+    <div>
+      <div className="p-12 flex flex-col gap-4">
+        {loadedData.posts.map((post: any) => (
+          <div key={post.id}>
+            <Link to={`/posts/${post.id}`} className="text-xl">
+              {post.title}
+            </Link>
+            <div className="text-sm text-gray-400">{post.createdAt}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
+};
+export default Page;
